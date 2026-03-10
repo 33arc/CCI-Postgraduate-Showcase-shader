@@ -15,8 +15,8 @@ float read(sampler2D tex, ivec2 res, ivec2 coord, ivec2 offset, vec4 mouse)
     else if (c.y > r.y)
         c.y = r.y - (c.y - r.y);
     
-    // is there a way to tell if the mouse is down or not? it seems to get stuck :(
-    float ui = clamp(1.0 - length(vec2(c) - mouse.xy) / 15.0, 0.0, 1.0);
+    // it doesn't get stuck anymore!
+    float ui = clamp(1.0 - length(vec2(c) - mouse.xy) / 20.0, 0.0, 1.0);
     if ( mouse.z < 0.0 && mouse.w < 0.0 ) {
     ui=0.0;
     }
@@ -33,8 +33,21 @@ float process(sampler2D bufferIn, sampler2D bufferOut, ivec2 res, vec4 mouse, iv
     float d = read(bufferIn, res, p, ivec2( 0,  1), mouse);
     
     float c = read(bufferOut, res, p, ivec2(0), mouse);
+
+    // random drop
+    float dropRate = 0.002;
+    float t = float(frame) * dropRate;
+    vec2 dropPos = fract(floor(t) * vec2(0.456665, 0.708618)) * vec2(res);
+    float amp = 1.0 - step(0.05, fract(t));
+    float drop = 0.0;
+    for (int i = 0; i < 5; i++) {
+	    float t = float(frame) * dropRate + float(i) * 1.7391;
+	    vec2 dropPos = fract(floor(t) * vec2(0.456665 + float(i)*0.113, 0.708618 + float(i)*0.097)) * vec2(res);
+	    float amp = 1.0 - step(0.05, fract(t));
+	    drop += amp * smoothstep(8.0, 0.0, length(vec2(p) - dropPos));
+    }
+
+    float damp = 0.985;
     
-    float damp = 0.98;
-    
-    return ((l + r + u + d) / 2.0 - c) * damp;
+    return ((l + r + u + d) / 2.0 - c) * damp + drop;
 }
